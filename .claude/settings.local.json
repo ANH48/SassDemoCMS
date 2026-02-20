@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(pnpm:*)",
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(docker:*)",
+      "Bash(source:*)",
+      "Bash(nvm ls:*)",
+      "Bash(nvm use:*)",
+      "Bash(corepack enable:*)",
+      "Bash(corepack prepare:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx nest build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(echo:*)",
+      "Bash(git init:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(git status:*)"
+    ]
+  }
+}
