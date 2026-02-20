@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../src/generated/tenant-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum TenantUserRole {
+  TENANT_ADMIN
+  TENANT_USER
+}
+
+enum ProductType {
+  GOODS
+  SERVICE_PACKAGE
+  MATERIAL_TRACKED
+  RAW_MATERIAL
+  SERVICE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceRecordStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// --- Models ---
+
+model TenantUser {
+  id       String         @id @default(uuid())
+  email    String         @unique
+  password String
+  name     String
+  role     TenantUserRole @default(TENANT_USER)
+
+  serviceRecords ServiceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tenant_users")
+}
+
+model ProductCategory {
+  id        String             @id @default(uuid())
+  name      String
+  parentId  String?
+  parent    ProductCategory?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  ProductCategory[]  @relation("CategoryHierarchy")
+  sortOrder Int                @default(0)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_categories")
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  sku         String?     @unique
+  description String?
+
+  // Type determines behavior (inventory, sell, buy flags)
+  productType ProductType @default(GOODS)
+
+  // Category
+  categoryId String?
+  category   ProductCategory? @relation(fields: [categoryId], references: [id])
+
+  // Pricing - up to 4 selling price tiers + cost prices
+  sellingPrice1 Decimal  @default(0) @db.Decimal(12, 2)
+  sellingPrice2 Decimal? @db.Decimal(12, 2)
+  sellingPrice3 Decimal? @db.Decimal(12, 2)
+  sellingPrice4 Decimal? @db.Decimal(12, 2)
+  importPrice   Decimal? @db.Decimal(12, 2)
+  costPrice     Decimal? @db.Decimal(12, 2)
+
+  // Units
+  unit           String?
+  dosageUnit     String?
+  conversionRate Decimal @default(1) @db.Decimal(10, 4)
+
+  // Inventory
+  stock    Int  @default(0)
+  minStock Int?
+
+  // Commission rates for staff levels (percentage)
+  commissionRate1 Decimal? @db.Decimal(5, 2)
+  commissionRate2 Decimal? @db.Decimal(5, 2)
+  commissionRate3 Decimal? @db.Decimal(5, 2)
+
+  // Service-specific fields
+  treatmentCycleDays Int?
+  treatmentSessions  Int?
+
+  // Flags
+  isDefault   Boolean @default(false)
+  isOpenPrice Boolean @default(false)
+  status      String  @default("ACTIVE")
+
+  // Relations
+  orderItems   OrderItem[]
+  packageItems PackageItem[] @relation("ParentProduct")
+  includedIn   PackageItem[] @relation("ChildProduct")
+  serviceRecords ServiceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
+}
+
+model PackageItem {
+  id              String  @id @default(uuid())
+  parentProductId String
+  parentProduct   Product @relation("ParentProduct", fields: [parentProductId], references: [id], onDelete: Cascade)
+  childProductId  String
+  childProduct    Product @relation("ChildProduct", fields: [childProductId], references: [id])
+  quantity        Int     @default(1)
+
+  @@unique([parentProductId, childProductId])
+  @@map("package_items")
+}
+
+model Customer {
+  id      String  @id @default(uuid())
+  name    String
+  email   String?
+  phone   String?
+  address String?
+
+  orders         Order[]
+  serviceRecords ServiceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customers")
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  customerId String
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  total      Decimal     @default(0) @db.Decimal(12, 2)
+  status     OrderStatus @default(PENDING)
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(12, 2)
+  priceTier Int?    @default(1)
+  discount  Decimal @default(0) @db.Decimal(12, 2)
+  staffId   String?
+
+  @@map("order_items")
+}
+
+model RevenueShare {
+  id         String  @id @default(uuid())
+  name       String
+  percentage Decimal @db.Decimal(5, 2)
+  type       String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("revenue_shares")
+}
+
+model ServiceRecord {
+  id          String              @id @default(uuid())
+  productId   String
+  product     Product             @relation(fields: [productId], references: [id])
+  customerId  String
+  customer    Customer            @relation(fields: [customerId], references: [id])
+  staffId     String
+  staff       TenantUser          @relation(fields: [staffId], references: [id])
+  notes       String?
+  status      ServiceRecordStatus @default(PENDING)
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("service_records")
+}
