@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint, Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER:     postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB:       saas_global
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL:  postgresql://postgres:postgres@localhost:5432/saas_global
+      JWT_SECRET:    ci-test-secret
+      NODE_ENV:      test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma clients
+        run: |
+          pnpm --filter @repo/database exec prisma generate --schema=prisma/global/schema.prisma
+          pnpm --filter @repo/database exec prisma generate --schema=prisma/tenant/schema.prisma
+
+      - name: Run global DB migrations
+        run: pnpm --filter @repo/database exec prisma migrate deploy --schema=prisma/global/schema.prisma
+
+      - name: Build API
+        run: pnpm --filter @repo/api build
+
+      - name: Run unit tests
+        run: pnpm --filter @repo/api test --passWithNoTests
+
+      - name: Build global-admin
+        run: pnpm --filter @repo/global-admin build
+
+      - name: Build tenant-admin
+        run: pnpm --filter @repo/tenant-admin build

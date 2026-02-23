@@ -8,6 +8,7 @@ import { PlansModule } from "./plans/plans.module";
 import { SubscriptionsModule } from "./subscriptions/subscriptions.module";
 import { FeaturesModule } from "./features/features.module";
 import { BillingModule } from "./billing/billing.module";
+import { TenantModule } from "./tenant/tenant.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { BillingModule } from "./billing/billing.module";
     SubscriptionsModule,
     FeaturesModule,
     BillingModule,
+    TenantModule,
   ],
   providers: [
     {

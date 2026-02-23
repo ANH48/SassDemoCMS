@@ -8,7 +8,23 @@
     "start": "node dist/main",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,test}/**/*.ts\"",
-    "seed": "npx ts-node src/seed.ts"
+    "seed": "npx ts-node src/seed.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage"
+  },
+  "jest": {
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": { "^.+\\.ts$": "ts-jest" },
+    "collectCoverageFrom": ["**/*.(t|j)s", "!**/*.spec.(t|j)s"],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@repo/database$": "<rootDir>/../../../packages/database/src/index.ts",
+      "^@repo/types$":    "<rootDir>/../../../packages/types/src/index.ts"
+    }
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",
@@ -17,6 +33,7 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/swagger": "^11.2.6",
     "@repo/database": "workspace:*",
     "@repo/types": "workspace:*",
     "bcrypt": "^6.0.0",
@@ -25,15 +42,22 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.1.14",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.0.0",
     "@types/passport-jwt": "^4.0.1",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.2.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.6",
     "typescript": "^5.7.0"
   }
 }
